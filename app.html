@@ -1,0 +1,182 @@
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+  <meta charset="UTF-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+  <title>BharatMail - Account Selection</title>  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>  
+  <style>  
+    :root {  
+      --primary: #1e3c72;  
+      --secondary: #2a5298;  
+      --accent: #4a7dff;  
+      --light: #f5f7fa;  
+      --radius: 12px;  
+      --shadow: 0 6px 16px rgba(0,0,0,0.1);  
+    }  body {  
+  font-family: "Segoe UI", Arial, sans-serif;  
+  display: flex;  
+  align-items: center;  
+  justify-content: center;  
+  height: 100vh;  
+  margin: 0;  
+  background: linear-gradient(135deg, var(--primary), var(--secondary));  
+}  
+
+.card {  
+  background: white;  
+  padding: 2rem;  
+  border-radius: var(--radius);  
+  box-shadow: var(--shadow);  
+  text-align: center;  
+  width: 100%;  
+  max-width: 400px;  
+  animation: fadeIn 0.4s ease;  
+}  
+
+@keyframes fadeIn {  
+  from { opacity: 0; transform: translateY(10px); }  
+  to { opacity: 1; transform: translateY(0); }  
+}  
+
+h2 {  
+  color: var(--primary);  
+  margin-bottom: 1rem;  
+}  
+
+p {  
+  color: #444;  
+  margin-bottom: 1.5rem;  
+}  
+
+.email-box {  
+  background: var(--light);  
+  padding: 0.75rem 1rem;  
+  border-radius: var(--radius);  
+  margin-bottom: 1.5rem;  
+  font-weight: 500;  
+  color: #333;  
+  border-left: 4px solid var(--accent);  
+}  
+
+.btn {  
+  display: block;  
+  width: 100%;  
+  padding: 0.8rem;  
+  margin-top: 0.5rem;  
+  border: none;  
+  border-radius: var(--radius);  
+  font-size: 16px;  
+  font-weight: 600;  
+  cursor: pointer;  
+  transition: 0.3s;  
+}  
+
+.btn-confirm {  
+  background: linear-gradient(90deg, var(--primary), var(--secondary));  
+  color: white;  
+}  
+
+.btn-confirm:hover {  
+  transform: translateY(-2px);  
+  box-shadow: 0 4px 12px rgba(30,60,114,0.3);  
+}  
+
+.btn-logout {  
+  background: #f8f9fa;  
+  color: #dc3545;  
+  border: 1px solid #ddd;  
+}  
+
+.btn-logout:hover {  
+  background: #fff0f0;  
+}  
+
+.loading {  
+  display: none;  
+  margin-top: 1rem;  
+  color: #555;  
+  font-size: 14px;  
+}
+
+  </style>  
+</head>  
+<body>  
+  <div class="card" id="account-card">  
+    <h2>Select Your Account</h2>  
+    <p>Signed in as:</p>  
+    <div class="email-box" id="user-email">Loading...</div>  <button class="btn btn-confirm" id="confirm-btn">Confirm</button>  
+<button class="btn btn-logout" id="logout-btn">Logout</button>  
+
+<div class="loading" id="loading-msg">Processing...</div>
+
+  </div>    <script>  
+    const SUPABASE_URL = "https://kwvgqfahzfexmgcsfdzs.supabase.co";  
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3dmdxZmFoemZleG1nY3NmZHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzMjM0NzQsImV4cCI6MjA3Nzg5OTQ3NH0.kz1XhNiItOGLO3_Q8CNBPMr3vOXL2lnrHlc_kHg7MNU";  
+    const { createClient } = supabase;  
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);  
+  
+    const userEmailBox = document.getElementById("user-email");  
+    const confirmBtn = document.getElementById("confirm-btn");  
+    const logoutBtn = document.getElementById("logout-btn");  
+    const loadingMsg = document.getElementById("loading-msg");  
+  
+    async function getUserInfo() {  
+      const { data, error } = await supabaseClient.auth.getUser();  
+  
+      if (error || !data.user) {  
+        console.log("No active session found, redirecting to login...");  
+        localStorage.removeItem("bharatmail_user");  
+        window.location.href = "index.html";  
+        return;  
+      }  
+  
+      const user = data.user;  
+      userEmailBox.textContent = user.email;  
+  
+      // Store user session in localStorage  
+      localStorage.setItem("bharatmail_user", JSON.stringify({  
+        id: user.id,  
+        email: user.email  
+      }));  
+    }  
+  
+    confirmBtn.addEventListener("click", () => {  
+      loadingMsg.style.display = "block";  
+      confirmBtn.disabled = true;  
+  
+      // Continue previous app redirect function  
+      setTimeout(async () => {  
+        const storedUser = JSON.parse(localStorage.getItem("bharatmail_user"));  
+        if (storedUser && storedUser.email) {  
+          // Redirect to app.html  
+          window.location.href = "app.html";  
+        } else {  
+          // If session lost, back to login  
+          window.location.href = "index.html";  
+        }  
+      }, 800);  
+    });  
+  
+    logoutBtn.addEventListener("click", async () => {  
+      loadingMsg.style.display = "block";  
+      loadingMsg.textContent = "Signing out...";  
+      const { error } = await supabaseClient.auth.signOut();  
+  
+      // Clear local session  
+      localStorage.removeItem("bharatmail_user");  
+  
+      setTimeout(() => {  
+        if (error) {  
+          loadingMsg.textContent = "Logout failed. Try again.";  
+          console.error("Logout error:", error.message);  
+        } else {  
+          window.location.href = "index.html";  
+        }  
+      }, 1000);  
+    });  
+  
+    // Initialize on load  
+    getUserInfo();  
+  </script>  </body>  
+  </html>  
+Is this app.html redirect user to app from where it comes after verification successfull
